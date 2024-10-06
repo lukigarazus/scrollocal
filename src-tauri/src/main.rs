@@ -30,14 +30,15 @@ impl Serialize for KindWrapper {
     }
 }
 
-struct File {
+struct LocalFile {
     name: String,
-    data: String,
+    lazy: bool,
+    data: Option<String>,
     kind: KindWrapper,
     extension: String,
 }
 
-impl Serialize for File {
+impl Serialize for LocalFile {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -47,12 +48,56 @@ impl Serialize for File {
         state.serialize_field("data", &self.data)?;
         state.serialize_field("kind", &self.kind)?;
         state.serialize_field("extension", &self.extension)?;
+        state.serialize_field("lazy", &self.lazy)?;
+
         state.end()
     }
 }
 
-#[tauri::command]
-fn load_file(path: &str) -> Vec<File> {
+#[tauri::command(async)]
+fn load_file(path: &str) -> Result<LocalFile, String> {
+    let dir = tauri::api::path::download_dir();
+
+    let file = dir.and_then(|dir| {
+        let path = dir.join(path);
+        if path.is_file() {
+            let path = path.to_str().unwrap().to_string();
+            let fmt = file_format::FileFormat::from_file(&path);
+            let file = tauri::api::file::read_binary(&path);
+            if let Ok(file) = file {
+                let encoded = base64::engine::general_purpose::STANDARD.encode(&file);
+                let file = LocalFile {
+                    name: path,
+                    lazy: false,
+                    data: Some(encoded),
+                    kind: KindWrapper(
+                        fmt.as_ref()
+                            .map_or(file_format::Kind::Other, |fmt| fmt.kind()),
+                    ),
+                    extension: fmt
+                        .as_ref()
+                        .map_or("".to_string(), |fmt| fmt.extension().to_string()),
+                };
+
+                Some(file)
+            } else {
+                println!("path: {}, file not ok", path);
+                None
+            }
+        } else {
+            None
+        }
+    });
+
+    if let Some(file) = file {
+        Ok(file)
+    } else {
+        Err("file not found".to_string())
+    }
+}
+
+#[tauri::command(async)]
+fn load_files(path: &str) -> Vec<LocalFile> {
     // Tauri read all files in Downloads
 
     let dir = tauri::api::path::download_dir();
@@ -86,25 +131,26 @@ fn load_file(path: &str) -> Vec<File> {
     let mut files = vec![];
     for path in paths {
         let fmt = file_format::FileFormat::from_file(&path);
-        let file = tauri::api::file::read_binary(&path);
+        //let file = tauri::api::file::read_binary(&path);
 
-        if let Ok(file) = file {
-            let encoded = base64::engine::general_purpose::STANDARD.encode(&file);
-            let file = File {
-                name: path,
-                data: encoded,
-                kind: KindWrapper(
-                    fmt.as_ref()
-                        .map_or(file_format::Kind::Other, |fmt| fmt.kind()),
-                ),
-                extension: fmt
-                    .as_ref()
-                    .map_or("".to_string(), |fmt| fmt.extension().to_string()),
-            };
-            files.push(file);
-        } else {
-            println!("path: {}, file not ok", path);
-        }
+        //if let Ok(file) = file {
+        //let encoded = base64::engine::general_purpose::STANDARD.encode(&file);
+        let file = LocalFile {
+            name: path,
+            lazy: true,
+            data: None,
+            kind: KindWrapper(
+                fmt.as_ref()
+                    .map_or(file_format::Kind::Other, |fmt| fmt.kind()),
+            ),
+            extension: fmt
+                .as_ref()
+                .map_or("".to_string(), |fmt| fmt.extension().to_string()),
+        };
+        files.push(file);
+        //} else {
+        //    println!("path: {}, file not ok", path);
+        //}
     }
 
     files
@@ -112,8 +158,7 @@ fn load_file(path: &str) -> Vec<File> {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet])
-        .invoke_handler(tauri::generate_handler![load_file])
+        .invoke_handler(tauri::generate_handler![load_files, load_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

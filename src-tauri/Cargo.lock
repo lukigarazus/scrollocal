@@ -679,6 +679,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ffprobe"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ffef835e1f9ac151db5bb2adbb95c9dfe1f315f987f011dd89cd655b4e9a52c"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "field-offset"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -744,6 +754,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e13624c2627564efccf4934284bdd98cbaa14e79b0b5a141218e507b3a823456"
 dependencies = [
  "percent-encoding",
+]
+
+[[package]]
+name = "fs2"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9564fc758e15025b46aa6643b1b77d047d1a56a1aea6e01002ac0c7026876213"
+dependencies = [
+ "libc",
+ "winapi",
 ]
 
 [[package]]
@@ -1348,6 +1368,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "jfs"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f428b1cf5248265f8358cf96c602323ce4bea140827eaefd8901e3106fec5e44"
+dependencies = [
+ "fs2",
+ "log",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "uuid",
+]
+
+[[package]]
 name = "jni"
 version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1434,7 +1468,10 @@ name = "local-browser"
 version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
+ "ffprobe",
  "file-format",
+ "jfs",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "tauri",

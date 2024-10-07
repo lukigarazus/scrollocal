@@ -15,6 +15,7 @@ export type Settings = {
   autoplay: boolean;
   showControlsInGalleryView: boolean;
   bufferSize: number;
+  maxVideoElements: number;
 };
 
 type SettingsContext = Settings & {
@@ -23,6 +24,7 @@ type SettingsContext = Settings & {
   setAutoplay: (autoplay: boolean) => void;
   setShowControlsInGalleryView: (showControlsInGalleryView: boolean) => void;
   setBufferSize: (bufferSize: number) => void;
+  setMaxVideoElements: (maxVideoElements: number) => void;
 };
 
 export const persistSettings = (settings: Settings) => {
@@ -36,6 +38,7 @@ const defaultSettings: Settings = {
   autoplay: true,
   showControlsInGalleryView: false,
   bufferSize: 2,
+  maxVideoElements: 20,
 };
 
 export const loadSettings = (): Settings => {
@@ -53,6 +56,7 @@ export const SettingsContext = createContext<SettingsContext>({
   setAutoplay: (autoplay: boolean) => {},
   setShowControlsInGalleryView: (showControlsInGalleryView: boolean) => {},
   setBufferSize: (bufferSize: number) => {},
+  setMaxVideoElements: (maxVideoElements: number) => {},
 });
 
 export const SettingsProvider = ({ children }: PropsWithChildren) => {
@@ -75,7 +79,8 @@ export const SettingsProvider = ({ children }: PropsWithChildren) => {
       setAutoplay: setValue("autoplay"),
       setShowControlsInGalleryView: setValue("showControlsInGalleryView"),
       setBufferSize: setValue("bufferSize"),
-    };
+      setMaxVideoElements: setValue("maxVideoElements"),
+    } satisfies SettingsContext;
   }, [settings]);
 
   useEffect(() => {

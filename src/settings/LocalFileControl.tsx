@@ -1,33 +1,45 @@
-import React, { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api";
 
 import { useLocalFiles } from "../localFile";
-import { File } from "../types";
 import { useSettings } from "../contexts/SettingsContext";
 
-export function LocalFileControl({
-  setFiles,
-}: {
-  setFiles: (files: File[]) => void;
-}) {
-  const { files, loadFiles, error } = useLocalFiles();
+type State =
+  | {
+      kind: "idle";
+    }
+  | {
+      kind: "loading";
+    }
+  | {
+      kind: "error";
+      error: Error;
+    };
+
+export function LocalFileControl({}: {}) {
+  const { loadFiles } = useLocalFiles();
   const { glob, setGlob } = useSettings();
 
   const [localGlob, setLocalGlob] = useState<string>(glob);
+  const [state, setState] = useState<State>({ kind: "idle" });
 
-  useEffect(() => setFiles(files), [files]);
-  useEffect(() => {
-    if (glob !== localGlob) return;
+  const react = useCallback((glob: string) => {
+    setState({ kind: "loading" });
 
-    invoke("clean_data_dir").then(() => {
-      invoke("move_files_to_data_dir", { path: glob })
-        .then((res) => {
-          console.log("ok", res);
-          loadFiles();
-        })
-        .catch(console.error);
-    });
-  }, [glob]);
+    invoke("clean_data_dir")
+      .then(() => {
+        return invoke("move_files_to_data_dir", { path: glob });
+      })
+      .then((res) => {
+        return loadFiles();
+      })
+      .then(() => {
+        setState({ kind: "idle" });
+      })
+      .catch((err) => {
+        setState({ kind: "error", error: err });
+      });
+  }, []);
 
   return (
     <div
@@ -39,9 +51,16 @@ export function LocalFileControl({
       }}
     >
       <input value={localGlob} onChange={(e) => setLocalGlob(e.target.value)} />
-      <button onClick={() => setGlob(localGlob)}>Load folder</button>
-      <span>Loaded {files.length} files</span>
-      <span>Error {error?.message ?? "none"}</span>
+      <button
+        onClick={() => {
+          setGlob(localGlob);
+          react(localGlob);
+        }}
+      >
+        Load folder
+      </button>
+      {state.kind === "loading" && <div>Loading...</div>}
+      {state.kind === "error" && <div>Error: {state.error.message}</div>}
     </div>
   );
 }

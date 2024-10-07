@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { FinalFile, type LocalFile } from "../types";
 import { FinalFileCell } from "./FinalFileCell";
 import { localFileToFinalFile } from "../localFile";
+// import { loadLocalFile } from "../invokeUtil";
 
 type LocalFileCellState =
   | { kind: "loading" }
@@ -46,6 +47,7 @@ export function LocalFileCell({
   height: number;
   width: number;
   visibility?: number;
+  videoElement?: HTMLVideoElement;
 }) {
   const [state, setState] = useState<LocalFileCellState>({
     kind: "loaded",
@@ -53,6 +55,7 @@ export function LocalFileCell({
     file: localFileToFinalFile(data),
   });
 
+  // useEffect(() => {
   //   if (data.lazy) {
   //     loadLocalFile(data.name)
   //       .then(([file, fromCache]) => {

@@ -5,6 +5,9 @@ export type ScrollElement = {
   data: unknown;
   visibility?: number;
   index?: number;
+  videoElement?: HTMLVideoElement;
+  startPosition?: number;
+  endPosition?: number;
 };
 
 export const sumHeights = (elements: ScrollElement[], rowGutter = 0) => {

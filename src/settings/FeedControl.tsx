@@ -30,6 +30,8 @@ export function FeedControl() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
+        flexDirection: "column",
+        gap: "5px",
       }}
     >
       <BooleanControl

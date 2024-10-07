@@ -33,7 +33,13 @@ function renderCell({
   }
 }
 
-export function Gallery({ files }: { files: File[] }) {
+export function Gallery({
+  files,
+  loading,
+}: {
+  files: File[];
+  loading: boolean;
+}) {
   // const { bufferSize } = useSettings();
 
   const currentIndex = useRef(0);
@@ -59,6 +65,9 @@ export function Gallery({ files }: { files: File[] }) {
         boxSizing: "border-box",
         border: "1px solid grey",
         overflow: "hidden",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
       }}
     >
       {files.length ? (
@@ -69,9 +78,11 @@ export function Gallery({ files }: { files: File[] }) {
           onScroll={() => {}}
           /* @ts-ignore */
           renderElement={renderCell}
-          overscanByPixels={500}
+          overscanBy={2}
           getNextElement={getNextElement}
         />
+      ) : loading ? (
+        <div>Loading ...</div>
       ) : (
         <div>Nothing to show</div>
       )}

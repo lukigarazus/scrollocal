@@ -9,11 +9,13 @@ import { type File } from "./types";
 import "./App.css";
 import { useLocalFiles } from "./localFile";
 
-function App() {
+function WithSettings({}: {}) {
   const [files, setFiles] = useState<File[]>([]);
-  const { loading } = useSettings();
-  const { files: localFiles, loadFiles } = useLocalFiles();
-
+  const {
+    files: localFiles,
+    loadFiles,
+    loading: localFilesLoading,
+  } = useLocalFiles();
   useEffect(() => {
     loadFiles();
   }, []);
@@ -21,17 +23,20 @@ function App() {
   useEffect(() => {
     setFiles(localFiles);
   }, [localFiles]);
+  return (
+    <>
+      <Gallery loading={localFilesLoading} files={files} />
+      <Settings />
+    </>
+  );
+}
+
+function App() {
+  const { loading } = useSettings();
 
   return (
     <div style={{ position: "relative" }}>
-      {loading ? (
-        <div>Loading settings</div>
-      ) : (
-        <>
-          <Gallery files={files} />
-          <Settings setFiles={setFiles} />
-        </>
-      )}
+      {loading ? <div>Loading settings</div> : <WithSettings />}
     </div>
   );
 }

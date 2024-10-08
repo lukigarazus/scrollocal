@@ -10,6 +10,7 @@ import "./App.css";
 import { useLocalFiles } from "./localFile";
 
 function WithSettings({}: {}) {
+  const { glob } = useSettings();
   const [files, setFiles] = useState<File[]>([]);
   const {
     files: localFiles,
@@ -25,7 +26,7 @@ function WithSettings({}: {}) {
   }, [localFiles]);
   return (
     <>
-      <Gallery loading={localFilesLoading} files={files} />
+      <Gallery key={glob} loading={localFilesLoading} files={files} />
       <Settings />
     </>
   );

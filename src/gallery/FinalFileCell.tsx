@@ -3,12 +3,10 @@ import { useMemo, useState, useEffect } from "react";
 
 import { type FinalFile, calculateDimensions } from "../types";
 import { useSettings } from "../contexts/SettingsContext";
+import { Container } from "../components/Container";
+import { useFullscreen } from "../contexts/FullscreenContext";
 
 const VISIBILITY_THRESHOLD = 0.5;
-
-const Container = ({ child }: { child: HTMLElement }) => {
-  return <div ref={(ref) => ref?.appendChild?.(child)}></div>;
-};
 
 type Props = {
   data: FinalFile;
@@ -48,6 +46,7 @@ function Ok({
   muted: boolean;
 } & Props & { setState: React.Dispatch<React.SetStateAction<State>> }) {
   const { autoplay, showControlsInGalleryView } = useSettings();
+  const { requestFullscreen, isFullscreen } = useFullscreen();
   // const { requestVideoElement, releaseVideoElement } = useVideoElement();
 
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(
@@ -136,16 +135,23 @@ function Ok({
       />
     );
   return (
-    <div style={{ position: "relative" }}>
-      <div
-        style={{
-          position: "absolute",
-          zIndex: 1000,
-        }}
-      >
-        {data.name}
-      </div>
-      {videoElement ? (
+    <div
+      style={{ position: "relative", cursor: "pointer" }}
+      onClick={() => {
+        if (videoElement) {
+          requestFullscreen(videoElement);
+        }
+      }}
+    >
+      {/* <div */}
+      {/*   style={{ */}
+      {/*     position: "absolute", */}
+      {/*     zIndex: 1000, */}
+      {/*   }} */}
+      {/* > */}
+      {/*   {data.name} */}
+      {/* </div> */}
+      {videoElement && !isFullscreen ? (
         <Container child={videoElement} />
       ) : (
         <div>Waiting for video element</div>

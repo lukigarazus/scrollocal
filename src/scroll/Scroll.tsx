@@ -10,6 +10,7 @@ import {
 import { calculateDimensions } from "../types";
 import { type ScrollElement, sumHeights, getNextElements } from "./utils";
 import { useVideoElement } from "../contexts/VideoElementContext";
+import { useBoundingClientRect } from "../useBoundingClientRef";
 
 const SCROLL_DEBOUNCE = 0;
 const CELL_RENDER_DEBOUNCE = 400;
@@ -186,15 +187,15 @@ function Column({
       const shouldOverscan =
         !isReallyVisible && firstVisibleFound && overscanned < overscanBy;
       if (isReallyVisible || shouldOverscan) {
-        console.log(
-          "visible element",
-          column,
-          windowStart,
-          windowEnd,
-          startPosition,
-          endPosition,
-          element.data,
-        );
+        // console.log(
+        //   "visible element",
+        //   column,
+        //   windowStart,
+        //   windowEnd,
+        //   startPosition,
+        //   endPosition,
+        //   element.data,
+        // );
         if (shouldOverscan) {
           overscanned++;
         }
@@ -265,11 +266,11 @@ function Column({
     setExhausted(false);
   }, [getNextElement]);
 
-  console.log(
-    "visibleElements",
-    visibleElements.length,
-    document.querySelectorAll("video").length,
-  );
+  // console.log(
+  //   "visibleElements",
+  //   visibleElements.length,
+  //   document.querySelectorAll("video").length,
+  // );
   return (
     <div style={{ position: "relative" }}>
       <div style={{ height: topOffset }} />
@@ -311,21 +312,6 @@ type ScrollProps = {
   getNextElement: () => Promise<ScrollElement | null>;
   overscanBy?: number;
   renderElement: (element: ScrollElement) => ReactNode;
-};
-
-const useBoundingClientRect = () => {
-  const [ref, setRef] = useState<HTMLElement | null>(null);
-  const [rect, setRect] = useState<DOMRect | null>(null);
-  useEffect(() => {
-    const element = ref;
-    if (!element) return;
-    const observer = new ResizeObserver((entries) => {
-      setRect(entries[0].contentRect);
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [ref]);
-  return { rect, setRef };
 };
 
 export default function Scroll({

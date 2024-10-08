@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api";
+import { invoke } from "@tauri-apps/api/core";
 
 import { useLocalFiles } from "../localFile";
 import { useSettings } from "../contexts/SettingsContext";
@@ -27,12 +27,8 @@ export function LocalFileControl({}: {}) {
     setState({ kind: "loading" });
 
     invoke("clean_data_dir")
-      .then(() => {
-        return invoke("move_files_to_data_dir", { path: glob });
-      })
-      .then((res) => {
-        return loadFiles();
-      })
+      .then(() => invoke("move_files_to_data_dir", { path: glob }))
+      .then((res) => loadFiles())
       .then(() => {
         setState({ kind: "idle" });
       })
@@ -40,7 +36,7 @@ export function LocalFileControl({}: {}) {
         setState({ kind: "error", error: err });
       });
   }, []);
-
+  console.log(state.error);
   return (
     <div
       style={{

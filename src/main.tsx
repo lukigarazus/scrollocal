@@ -4,14 +4,17 @@ import App from "./App";
 import { SettingsProvider } from "./contexts/SettingsContext";
 import { LocalFileProvider } from "./localFile";
 import { VideoElementProvider } from "./contexts/VideoElementContext";
+import { FullscreenProvider } from "./contexts/FullscreenContext";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <SettingsProvider>
     <LocalFileProvider>
       <VideoElementProvider>
-        <React.StrictMode>
-          <App />
-        </React.StrictMode>
+        <FullscreenProvider>
+          <React.StrictMode>
+            <App />
+          </React.StrictMode>
+        </FullscreenProvider>
       </VideoElementProvider>
     </LocalFileProvider>
   </SettingsProvider>,

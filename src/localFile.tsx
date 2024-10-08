@@ -1,6 +1,6 @@
 import { useState, useCallback, createContext, useContext } from "react";
-import { invoke } from "@tauri-apps/api";
-import { convertFileSrc } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
+import { convertFileSrc } from "@tauri-apps/api/core";
 
 import { LocalFile, FinalFile } from "./types";
 import { useSettings } from "./contexts/SettingsContext";

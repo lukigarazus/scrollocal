@@ -19,7 +19,7 @@ export interface FinalFile<Additional = unknown> {
   name: string;
   src: string;
   kind: "video" | "image";
-  type: "local";
+  type: "local" | "scrolller";
   extension: string;
   dimensions?: Dimensions;
   additional?: Additional;

@@ -16,6 +16,7 @@ type Props = {
   visibility?: number;
   videoElement?: HTMLVideoElement;
   onCellClick?: (id: string, videoElement?: HTMLVideoElement) => void;
+  style?: React.CSSProperties;
 };
 
 type State =
@@ -32,6 +33,18 @@ type State =
       kind: "loading";
     };
 
+const fixURL = (url: string) => {
+  let newUrl = url;
+  const isMP4 = url.endsWith(".mp4");
+  if (isMP4) {
+    newUrl = newUrl + "#t=0";
+  }
+
+  if (newUrl.match("scrolller")) newUrl = encodeURI(newUrl);
+
+  return newUrl;
+};
+
 function Ok({
   data,
   width,
@@ -41,6 +54,7 @@ function Ok({
   setState,
   videoElement: externalVideoElement,
   onCellClick,
+  style,
 }: {
   data: FinalFile;
   width: number;
@@ -71,7 +85,8 @@ function Ok({
   useEffect(() => {
     if (externalVideoElement) {
       const element = externalVideoElement;
-      element.src = data.src;
+
+      element.src = fixURL(data.src);
       element.muted = muted;
       element.controls = showControlsInGalleryView;
       element.autoplay = autoplay;
@@ -138,7 +153,7 @@ function Ok({
     );
   return (
     <div
-      style={{ position: "relative", cursor: "pointer" }}
+      style={{ position: "relative", cursor: "pointer", ...style }}
       onClick={() => {
         onCellClick?.(data.name, videoElement ?? undefined);
       }}

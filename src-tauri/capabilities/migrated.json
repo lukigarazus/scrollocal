@@ -23,6 +23,11 @@
     "shell:default",
     "fs:default",
     "dialog:allow-confirm",
-    "dialog:default"
+    "dialog:default",
+    {
+      "identifier": "http:default",
+      "allow": [{ "url": "https://*.scrolller*" }]
+    }
   ]
 }
+

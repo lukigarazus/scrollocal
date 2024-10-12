@@ -7,11 +7,12 @@ import {
   useRef,
 } from "react";
 import ReactModal from "react-modal";
-import { Container } from "../components/Container";
+import { useHotkeys } from "react-hotkeys-hook";
+import { useSwipeable } from "react-swipeable";
 
+import { Container } from "../components/Container";
 import { useBoundingClientRect } from "../useBoundingClientRef";
 import { useTags } from "./TagContext";
-import { useHotkeys } from "react-hotkeys-hook";
 
 const FullscreenContext = createContext<{
   isFullscreen: boolean;
@@ -53,6 +54,7 @@ type FullscreenState =
         width: number;
         height: number;
         controls: boolean;
+        autoplay: boolean;
       };
     }
   | {
@@ -60,7 +62,8 @@ type FullscreenState =
       galleryNext?: boolean;
       videoElement: HTMLVideoElement;
       oldAttributes?: { width: number; height: number; controls: boolean };
-    };
+    }
+  | { kind: "" };
 
 export const FullscreenProvider = ({
   children,
@@ -103,45 +106,54 @@ export const FullscreenProvider = ({
     },
     [state],
   );
-  useHotkeys(
-    "up",
-    () => {
+  const handleNavigation = useCallback(
+    (dir: "up" | "down") => {
       if (state.kind === "fullscreen") {
         if (currentGallery && state.id) {
-          currentGallery.getPrevious(state.id).then((element) => {
+          currentGallery[dir === "up" ? "getPrevious" : "getNext"](
+            state.id,
+          ).then((element) => {
             if (element) {
-              requestGalleryFullscreen({
+              setCurrentGallery({
                 getNext: currentGallery.getNext,
                 getPrevious: currentGallery.getPrevious,
                 current: element,
+              });
+              setState({
+                ...state,
+                kind: "unloading",
+                galleryNext: true,
               });
             }
           });
         }
       }
+    },
+    [state, currentGallery],
+  );
+  useHotkeys(
+    "up",
+    () => {
+      handleNavigation("up");
     },
     [currentGallery, state],
   );
   useHotkeys(
     "down",
     () => {
-      if (state.kind === "fullscreen") {
-        if (currentGallery && state.id) {
-          currentGallery.getNext(state.id).then((element) => {
-            console.log("next fullscrenn element", element);
-            if (element) {
-              requestGalleryFullscreen({
-                getNext: currentGallery.getNext,
-                getPrevious: currentGallery.getPrevious,
-                current: element,
-              });
-            }
-          });
-        }
-      }
+      handleNavigation("down");
     },
     [currentGallery, state],
   );
+  useHotkeys("p", () => {
+    if (state.kind === "fullscreen") {
+      state.videoElement.play();
+    }
+  });
+  const handlers = useSwipeable({
+    onSwipedUp: () => handleNavigation("up"),
+    onSwipedDown: () => handleNavigation("down"),
+  });
 
   const syncDimensions = useCallback(
     (element: HTMLVideoElement) => {
@@ -157,9 +169,11 @@ export const FullscreenProvider = ({
         width: videoElement.width,
         height: videoElement.height,
         controls: videoElement.controls,
+        autoplay: videoElement.autoplay,
       };
       syncDimensions(videoElement);
       videoElement.controls = true;
+      videoElement.autoplay = true;
 
       setState({
         kind: "fullscreen",
@@ -189,25 +203,8 @@ export const FullscreenProvider = ({
 
         videoElement = fullscreenVideoElement.current;
       }
-      if (state.kind === "fullscreen") {
-        setState({
-          kind: "unloading",
-          galleryNext: true,
-          videoElement: state.videoElement,
-          oldAttributes: state.oldAttributes,
-        });
-      }
 
-      if (state.kind === "unloading") {
-        setState({
-          kind: "unloading",
-          galleryNext: true,
-          videoElement: state.videoElement,
-          oldAttributes: state.oldAttributes,
-        });
-      }
-
-      if (state.kind === "idle") {
+      if (state.kind === "idle" || state.kind === "unloading") {
         requestFullscreen({
           id: gallery.current.id,
           // @ts-ignore
@@ -215,7 +212,7 @@ export const FullscreenProvider = ({
         });
       }
     },
-    [],
+    [state],
   );
 
   useEffect(() => {
@@ -231,6 +228,7 @@ export const FullscreenProvider = ({
         currentElement.width = state.oldAttributes.width;
         currentElement.height = state.oldAttributes.height;
         currentElement.controls = state.oldAttributes.controls;
+        currentElement.autoplay = state.oldAttributes.autoplay;
       }
       if (state.galleryNext) {
         requestGalleryFullscreen(currentGallery!);
@@ -284,6 +282,7 @@ export const FullscreenProvider = ({
         }}
       >
         <div
+          {...handlers}
           ref={(me) => setDivRef(me)}
           style={{ height: "100%", width: "100%" }}
         >

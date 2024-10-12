@@ -8,6 +8,7 @@ import { useFilter } from "../contexts/FilterContext";
 import { useFullscreen } from "../contexts/FullscreenContext";
 import { ScrollElement } from "../scroll/utils";
 import { FeedResult, FeedState } from "../feed/Feed";
+import { FinalFileCell } from "./FinalFileCell";
 
 export function Gallery({}: {}) {
   const { feed } = useFeed();
@@ -119,6 +120,18 @@ export function Gallery({}: {}) {
               height={height}
               width={width}
               onCellClick={onCellClick}
+            />
+          );
+        case "scrolller":
+          return (
+            <FinalFileCell
+              {...props}
+              data={data}
+              index={index}
+              height={height}
+              width={width}
+              onCellClick={onCellClick}
+              style={{ border: "2px red solid" }}
             />
           );
         default:

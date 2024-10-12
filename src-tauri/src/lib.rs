@@ -6,7 +6,8 @@ use serde::{Deserialize, Serialize, Serializer};
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use tauri::Manager;
-use tauri_plugin_fs::FsExt;
+
+mod scrolller;
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
@@ -210,6 +211,11 @@ fn load_file_batch(
     }
 }
 
+#[tauri::command(async)]
+async fn get_scrolller_data(iterator: Option<String>, filter: String, is_nsfw: bool) -> String {
+    scrolller::fech_data(iterator, &filter, is_nsfw).await
+}
+
 fn scramble_vec<T>(data: &mut Vec<T>) {
     data.shuffle(&mut thread_rng());
 }
@@ -408,6 +414,7 @@ fn load_files_random(app_handle: tauri::AppHandle) -> Vec<LocalFile> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
@@ -435,7 +442,8 @@ pub fn run() {
             load_file,
             load_file_batch,
             move_files_to_data_dir,
-            clean_data_dir
+            clean_data_dir,
+            get_scrolller_data
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -9,6 +9,7 @@ import { HotkeysProvider } from "react-hotkeys-hook";
 import { LocalFeedProvider } from "./contexts/LocalFeedContext/LocalFeedContext";
 import { FeedProvider } from "./contexts/FeedContext";
 import { FilterProvider } from "./contexts/FilterContext";
+import { ScrolllerProvider } from "./contexts/ScrolllerContext";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <SettingsProvider>
@@ -16,15 +17,17 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
       <FilterProvider>
         <FeedProvider>
           <LocalFeedProvider>
-            <VideoElementProvider>
-              <FullscreenProvider>
-                <HotkeysProvider>
-                  <React.StrictMode>
-                    <App />
-                  </React.StrictMode>
-                </HotkeysProvider>
-              </FullscreenProvider>
-            </VideoElementProvider>
+            <ScrolllerProvider>
+              <VideoElementProvider>
+                <FullscreenProvider>
+                  <HotkeysProvider>
+                    <React.StrictMode>
+                      <App />
+                    </React.StrictMode>
+                  </HotkeysProvider>
+                </FullscreenProvider>
+              </VideoElementProvider>
+            </ScrolllerProvider>
           </LocalFeedProvider>
         </FeedProvider>
       </FilterProvider>

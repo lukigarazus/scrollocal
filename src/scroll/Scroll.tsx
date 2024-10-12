@@ -8,29 +8,12 @@ import {
   useState,
 } from "react";
 import { calculateDimensions } from "../types";
-import { type ScrollElement, sumHeights, getNextElements } from "./utils";
+import { type ScrollElement, sumHeights } from "./utils";
 import { useVideoElement } from "../contexts/VideoElementContext";
 import { useBoundingClientRect } from "../useBoundingClientRef";
 
 const SCROLL_DEBOUNCE = 0;
 const CELL_RENDER_DEBOUNCE = 400;
-
-// function pickRandomElement<T>(elements: T[]) {
-//   const index = Math.floor(Math.random() * elements.length);
-//   return elements[index];
-// }
-//
-// const aspectRatios = [0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6];
-//
-// const getRandomElement = () => {
-//   const width = Math.random() * 10;
-//   return {
-//     id: Math.random().toString(),
-//     width,
-//     height: width * pickRandomElement(aspectRatios),
-//     data: Math.random(),
-//   };
-// };
 
 function ScrollElement({
   width,
@@ -83,30 +66,32 @@ function ScrollElement({
 }
 
 type ColumnProps = {
+  elements: ScrollElement[];
   column: number;
   rowGutter: number;
   onScroll: (x: number, y: number) => void;
-  getNextElement: () => Promise<ScrollElement | null>;
+  signalMore: () => void;
   parentHeight: number;
   renderElement: (element: ScrollElement) => ReactNode;
   scrollTop: number;
   overscanBy: number;
+  exhausted: boolean;
 };
 
 function Column({
+  elements,
   rowGutter,
-  column,
-  getNextElement,
+  signalMore,
   renderElement,
   scrollTop,
   parentHeight,
   overscanBy,
+  exhausted,
 }: ColumnProps) {
   const { rect, setRef } = useBoundingClientRect();
   const { requestVideoElement, releaseVideoElement } = useVideoElement();
 
-  const [elements, setElements] = useState<ScrollElement[]>([]);
-  const [exhausted, setExhausted] = useState(false);
+  // const [exhausted, setExhausted] = useState(false);
 
   const visibleElementsSet = useRef(new Map<string, HTMLVideoElement | void>());
 
@@ -248,23 +233,20 @@ function Column({
   }, [elementsWithDimensions, scrollTop]);
 
   useEffect(() => {
-    if (bottomOffset < overscanBy) {
-      if (exhausted) return;
-      getNextElements(getNextElement, 10).then((elements) => {
-        const hasNull = elements.includes(null);
-        if (hasNull) setExhausted(true);
-
-        setElements((oldElements) => [
-          ...oldElements,
-          ...(elements.filter(Boolean) as ScrollElement[]),
-        ]);
-      });
+    if (bottomOffset < 300 && !exhausted) {
+      signalMore();
+      // if (exhausted) return;
+      // getNextElements(getNextElement, 1).then((elements) => {
+      //   const hasNull = elements.includes(null);
+      //   if (hasNull) setExhausted(true);
+      //
+      //   setElements((oldElements) => [
+      //     ...oldElements,
+      //     ...(elements.filter(Boolean) as ScrollElement[]),
+      //   ]);
+      // });
     }
-  }, [bottomOffset, exhausted]);
-  useEffect(() => {
-    setElements([]);
-    setExhausted(false);
-  }, [getNextElement]);
+  }, [bottomOffset, scrollTop]);
 
   // console.log(
   //   "visibleElements",
@@ -305,22 +287,27 @@ function Column({
 }
 
 type ScrollProps = {
+  elements: ScrollElement[];
   columns: number;
   rowGutter: number;
   columnGutter: number;
   onScroll: (x: number, y: number) => void;
-  getNextElement: () => Promise<ScrollElement | null>;
+  signalMore: () => void;
   overscanBy?: number;
   renderElement: (element: ScrollElement) => ReactNode;
+  onElementClick?: (id: string, videoElement?: HTMLVideoElement) => void;
+  exhausted: boolean;
 };
 
 export default function Scroll({
+  elements,
   columns,
   rowGutter,
   columnGutter,
-  getNextElement,
+  signalMore,
   overscanBy = 1,
   renderElement,
+  exhausted,
 }: ScrollProps) {
   const { rect, setRef } = useBoundingClientRect();
 
@@ -335,15 +322,33 @@ export default function Scroll({
     [],
   );
 
+  const columnDividedElements = useMemo((): ScrollElement[][] => {
+    const columnHeights = Array.from({ length: columns }, (_, i) => [0, i]);
+    const columnElements = Array(columns)
+      .fill(undefined)
+      .map(() => [] as ScrollElement[]);
+
+    for (const element of elements) {
+      columnHeights.sort((a, b) => a[0] - b[0]);
+      const column = columnHeights[0][1];
+      columnHeights[0][0] += element.height + rowGutter;
+      columnElements[column].push(element);
+    }
+
+    return columnElements;
+  }, [elements, columns]);
+
   const columnElements = useMemo(() => {
     return Array.from({ length: columns }, (_, i) => {
       return (
         <Column
+          elements={columnDividedElements[i] ?? []}
+          exhausted={exhausted}
           key={i}
           column={i}
           rowGutter={rowGutter}
           onScroll={() => {}}
-          getNextElement={getNextElement}
+          signalMore={signalMore}
           parentHeight={rect?.height ?? 0}
           renderElement={renderElement}
           scrollTop={scrollPosition}
@@ -355,10 +360,11 @@ export default function Scroll({
     columns,
     rowGutter,
     scrollPosition,
-    getNextElement,
+    signalMore,
     rect,
     renderElement,
     overscanBy,
+    columnDividedElements,
   ]);
 
   return (

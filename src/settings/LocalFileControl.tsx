@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-
-import { useLocalFiles } from "../localFile";
-import { useSettings } from "../contexts/SettingsContext";
+import { useLocalFeed } from "../contexts/LocalFeedContext/LocalFeedContext";
 
 type State =
   | {
@@ -17,18 +14,13 @@ type State =
     };
 
 export function LocalFileControl({}: {}) {
-  const { loadFiles } = useLocalFiles();
-  const { glob, setGlob } = useSettings();
-
-  const [localGlob, setLocalGlob] = useState<string>(glob);
+  const { glob, setGlob, loadGlobFiles } = useLocalFeed();
+  const [localGlob, setLocalGlob] = useState<string | null>(glob);
   const [state, setState] = useState<State>({ kind: "idle" });
 
-  const react = useCallback((glob: string) => {
+  const react = useCallback(() => {
     setState({ kind: "loading" });
-
-    invoke("clean_data_dir")
-      .then(() => invoke("move_files_to_data_dir", { path: glob }))
-      .then((res) => loadFiles())
+    loadGlobFiles()
       .then(() => {
         setState({ kind: "idle" });
       })
@@ -36,7 +28,6 @@ export function LocalFileControl({}: {}) {
         setState({ kind: "error", error: err });
       });
   }, []);
-  console.log(state.error);
   return (
     <div
       style={{
@@ -46,11 +37,15 @@ export function LocalFileControl({}: {}) {
         alignItems: "center",
       }}
     >
-      <input value={localGlob} onChange={(e) => setLocalGlob(e.target.value)} />
+      <input
+        placeholder={"Folder path"}
+        value={localGlob || undefined}
+        onChange={(e) => setLocalGlob(e.target.value)}
+      />
       <button
         onClick={() => {
           setGlob(localGlob);
-          react(localGlob);
+          react();
         }}
       >
         Load folder

@@ -10,21 +10,19 @@ import {
 
 export type Settings = {
   loading: boolean;
-  glob: string;
-  randomize: boolean;
   autoplay: boolean;
   showControlsInGalleryView: boolean;
   bufferSize: number;
   maxVideoElements: number;
+  allowTags: boolean;
 };
 
 type SettingsContext = Settings & {
-  setGlob: (glob: string) => void;
-  setRandomize: (randomize: boolean) => void;
   setAutoplay: (autoplay: boolean) => void;
   setShowControlsInGalleryView: (showControlsInGalleryView: boolean) => void;
   setBufferSize: (bufferSize: number) => void;
   setMaxVideoElements: (maxVideoElements: number) => void;
+  setAllowTags: (allowTags: boolean) => void;
 };
 
 export const persistSettings = (settings: Settings) => {
@@ -32,9 +30,8 @@ export const persistSettings = (settings: Settings) => {
 };
 
 const defaultSettings: Settings = {
+  allowTags: false,
   loading: true,
-  glob: "",
-  randomize: false,
   autoplay: true,
   showControlsInGalleryView: false,
   bufferSize: 2,
@@ -51,12 +48,11 @@ export const loadSettings = (): Settings => {
 
 export const SettingsContext = createContext<SettingsContext>({
   ...defaultSettings,
-  setGlob: (glob: string) => {},
-  setRandomize: (randomize: boolean) => {},
   setAutoplay: (autoplay: boolean) => {},
   setShowControlsInGalleryView: (showControlsInGalleryView: boolean) => {},
   setBufferSize: (bufferSize: number) => {},
   setMaxVideoElements: (maxVideoElements: number) => {},
+  setAllowTags: (allowTags: boolean) => {},
 });
 
 export const SettingsProvider = ({ children }: PropsWithChildren) => {
@@ -74,8 +70,7 @@ export const SettingsProvider = ({ children }: PropsWithChildren) => {
   const value = useMemo(() => {
     return {
       ...settings,
-      setGlob: setValue("glob"),
-      setRandomize: setValue("randomize"),
+      setAllowTags: setValue("allowTags"),
       setAutoplay: setValue("autoplay"),
       setShowControlsInGalleryView: setValue("showControlsInGalleryView"),
       setBufferSize: setValue("bufferSize"),

@@ -24,9 +24,7 @@
   "app": {
     "security": {
       "assetProtocol": {
-        "scope": [
-          "**/*"
-        ],
+        "scope": ["**/*"],
         "enable": true
       },
       "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost; connect-src ipc: http://ipc.localhost"
@@ -40,3 +38,4 @@
     ]
   }
 }
+

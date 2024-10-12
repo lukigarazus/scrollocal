@@ -1,13 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { FinalFile, type LocalFile } from "../types";
 import { FinalFileCell } from "./FinalFileCell";
-import { localFileToFinalFile } from "../localFile";
-// import { loadLocalFile } from "../invokeUtil";
 
 type LocalFileCellState =
   | { kind: "loading" }
-  | { kind: "loaded"; file: FinalFile; fromCache: boolean }
+  | { kind: "loaded"; file: FinalFile<LocalFile>; fromCache: boolean }
   | { kind: "error"; error: Error };
 
 const Placeholder = ({
@@ -15,7 +13,7 @@ const Placeholder = ({
   height,
   text = "Local file",
 }: {
-  data: LocalFile;
+  data: FinalFile<LocalFile>;
   height: number;
   width: number;
   text?: string;
@@ -40,19 +38,21 @@ export function LocalFileCell({
   data,
   width,
   height,
+  onCellClick,
   ...props
 }: {
-  data: LocalFile;
+  data: FinalFile<LocalFile>;
   index: number;
   height: number;
   width: number;
   visibility?: number;
   videoElement?: HTMLVideoElement;
+  onCellClick?: (id: string, videoElement?: HTMLVideoElement) => void;
 }) {
   const [state, setState] = useState<LocalFileCellState>({
     kind: "loaded",
     fromCache: false,
-    file: localFileToFinalFile(data),
+    file: data,
   });
 
   // useEffect(() => {
@@ -88,6 +88,7 @@ export function LocalFileCell({
           data={state.file}
           width={width}
           height={height}
+          onCellClick={onCellClick}
           {...props}
         />
       );

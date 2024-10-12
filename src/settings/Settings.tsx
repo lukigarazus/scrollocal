@@ -2,8 +2,9 @@ import Modal from "react-modal";
 import CogIcon from "@heroicons/react/16/solid/CogIcon";
 import { useState } from "react";
 
-import { LocalFileControl } from "./LocalFileControl";
 import { FeedControl } from "./FeedControl";
+import { TagCreator } from "./TagCreator";
+import { Section, Sections } from "../components/Section";
 
 export function Settings({}: {}) {
   const [open, setOpen] = useState(false);
@@ -38,8 +39,14 @@ export function Settings({}: {}) {
         }}
         onRequestClose={() => setOpen(false)}
       >
-        <LocalFileControl />
-        <FeedControl />
+        <Sections>
+          <Section name="Feed controls">
+            <FeedControl />
+          </Section>
+          <Section name="Misc">
+            <TagCreator />
+          </Section>
+        </Sections>
       </Modal>
     </div>
   );

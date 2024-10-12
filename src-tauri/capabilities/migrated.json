@@ -2,9 +2,7 @@
   "identifier": "migrated",
   "description": "permissions that were migrated from v1",
   "local": true,
-  "windows": [
-    "main"
-  ],
+  "windows": ["main"],
   "permissions": [
     "core:default",
     "fs:allow-read-file",
@@ -18,13 +16,13 @@
     "fs:allow-exists",
     {
       "identifier": "fs:scope",
-      "allow": [
-        "**"
-      ]
+      "allow": ["**"]
     },
     "shell:allow-open",
     "fs:default",
     "shell:default",
-    "fs:default"
+    "fs:default",
+    "dialog:allow-confirm",
+    "dialog:default"
   ]
 }

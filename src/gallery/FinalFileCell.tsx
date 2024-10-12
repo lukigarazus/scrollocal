@@ -15,6 +15,7 @@ type Props = {
   height: number;
   visibility?: number;
   videoElement?: HTMLVideoElement;
+  onCellClick?: (id: string, videoElement?: HTMLVideoElement) => void;
 };
 
 type State =
@@ -39,6 +40,7 @@ function Ok({
   visibility,
   setState,
   videoElement: externalVideoElement,
+  onCellClick,
 }: {
   data: FinalFile;
   width: number;
@@ -46,7 +48,7 @@ function Ok({
   muted: boolean;
 } & Props & { setState: React.Dispatch<React.SetStateAction<State>> }) {
   const { autoplay, showControlsInGalleryView } = useSettings();
-  const { requestFullscreen, isFullscreen } = useFullscreen();
+  const { isFullscreen } = useFullscreen();
   // const { requestVideoElement, releaseVideoElement } = useVideoElement();
 
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(
@@ -138,9 +140,7 @@ function Ok({
     <div
       style={{ position: "relative", cursor: "pointer" }}
       onClick={() => {
-        if (videoElement) {
-          requestFullscreen(videoElement);
-        }
+        onCellClick?.(data.name, videoElement ?? undefined);
       }}
     >
       {/* <div */}
@@ -238,6 +238,7 @@ export function FinalFileCell({
   visibility,
   index,
   videoElement,
+  ...props
 }: Props) {
   const { autoplay } = useSettings();
   const [state, setState] = useState<State>({
@@ -270,6 +271,7 @@ export function FinalFileCell({
 
   return (
     <Ok
+      {...props}
       data={data}
       index={index}
       width={width}

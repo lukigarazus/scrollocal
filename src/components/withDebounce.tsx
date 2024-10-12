@@ -24,14 +24,12 @@ export function withDebounce<Props>(
         setDebounced(true);
       }, delay);
       return () => {
-        console.log("clearing timeout", props.index);
         clearTimeout(timer);
       };
     }, []);
     // @ts-expect-error
     if (debounced) return <Component {...props}>{children}</Component>;
 
-    console.log("debouncing", props.index);
     // @ts-expect-error
     return <Placeholder {...props} />;
   };

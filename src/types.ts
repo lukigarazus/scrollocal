@@ -1,4 +1,4 @@
-interface Dimensions {
+export interface Dimensions {
   width: number;
   height: number;
   aspect_ratio: string;
@@ -15,12 +15,14 @@ export interface LocalFile {
 
 export type File = LocalFile;
 
-export interface FinalFile {
+export interface FinalFile<Additional = unknown> {
   name: string;
   src: string;
-  kind: string;
+  kind: "video" | "image";
+  type: "local";
   extension: string;
   dimensions?: Dimensions;
+  additional?: Additional;
 }
 
 export const calculateDimensions = (

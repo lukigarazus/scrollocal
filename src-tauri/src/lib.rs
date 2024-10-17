@@ -1,214 +1,16 @@
-use base64::{self, Engine};
-use file_format::{self, Kind};
-use serde::ser::SerializeStruct;
-use serde::{Deserialize, Serialize, Serializer};
-
+use http::{header::*, response::Builder as ResponseBuilder, status::StatusCode};
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use tauri::Manager;
 
+mod http_server;
+mod local_files;
 mod scrolller;
+mod streaming;
+mod types;
 
-// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
-
-struct KindWrapper(Kind);
-
-impl Serialize for KindWrapper {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let kind_str = match self.0 {
-            Kind::Image => "image",
-            Kind::Video => "video",
-            Kind::Audio => "audio",
-
-            _ => "unknown",
-        };
-        serializer.serialize_str(kind_str)
-    }
-}
-
-struct LocalFile {
-    name: String,
-    lazy: bool,
-    data: Option<String>,
-    kind: KindWrapper,
-    dimensions: Option<Dimensions>,
-    extension: String,
-}
-
-#[derive(Serialize, Deserialize)]
-struct Dimensions {
-    width: i64,
-    height: i64,
-    aspect_ratio: String,
-}
-
-impl Serialize for LocalFile {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut state = serializer.serialize_struct("File", 3)?;
-        state.serialize_field("name", &self.name)?;
-        state.serialize_field("data", &self.data)?;
-        state.serialize_field("kind", &self.kind)?;
-        state.serialize_field("extension", &self.extension)?;
-        state.serialize_field("lazy", &self.lazy)?;
-        state.serialize_field("dimensions", &self.dimensions)?;
-
-        state.end()
-    }
-}
-
-fn get_dimensions_from_path(path: &str, store: Option<jfs::Store>) -> Option<Dimensions> {
-    let cached_dimensions = store
-        .as_ref()
-        .and_then(|store| match store.get::<Dimensions>(&path) {
-            Ok(dims) => Some(dims),
-            Err(_) => None,
-        });
-
-    if let Some(dims) = cached_dimensions {
-        return Some(dims);
-    }
-
-    let probe = ffprobe::ffprobe(&path);
-    let stream = match probe {
-        Ok(ref probe) => probe.streams.first(),
-        Err(_) => None,
-    };
-    let dims = match stream {
-        Some(stream) => stream.width.and_then(|w| {
-            stream
-                .display_aspect_ratio
-                .to_owned()
-                .and_then(|aspect_ratio| {
-                    stream.height.map(|h| Dimensions {
-                        width: w,
-                        height: h,
-                        aspect_ratio,
-                    })
-                })
-        }),
-        None => None,
-    };
-
-    dims.as_ref().map(|dims| {
-        store.map(|store| store.save_with_id(dims, &path));
-    });
-    dims
-}
-
-#[tauri::command(async)]
-fn load_file(app_handle: tauri::AppHandle, path: &str) -> Result<LocalFile, String> {
-    let start = std::time::Instant::now();
-    let dir = app_handle.path().download_dir();
-    let dir = match dir {
-        Ok(dir) => Some(dir),
-        Err(_) => None,
-    };
-
-    let file = dir.and_then(|dir| {
-        let path = dir.join(path);
-        if path.is_file() {
-            let path = path.to_str().unwrap().to_string();
-            let fmt = file_format::FileFormat::from_file(&path);
-            let file = std::fs::read(&path);
-            if let Ok(file) = file {
-                let encoded = base64::engine::general_purpose::STANDARD.encode(&file);
-                let file = LocalFile {
-                    name: path,
-                    lazy: false,
-                    data: Some(encoded),
-                    dimensions: None,
-                    kind: KindWrapper(
-                        fmt.as_ref()
-                            .map_or(file_format::Kind::Other, |fmt| fmt.kind()),
-                    ),
-                    extension: fmt
-                        .as_ref()
-                        .map_or("".to_string(), |fmt| fmt.extension().to_string()),
-                };
-
-                Some(file)
-            } else {
-                println!("path: {}, file not ok", path);
-                None
-            }
-        } else {
-            None
-        }
-    });
-
-    println!("load_file took {:?}", start.elapsed());
-    if let Some(file) = file {
-        Ok(file)
-    } else {
-        Err("file not found".to_string())
-    }
-}
-
-#[tauri::command(async)]
-fn load_file_batch(
-    app_handle: tauri::AppHandle,
-    paths: Vec<&str>,
-) -> Result<Vec<LocalFile>, String> {
-    let start = std::time::Instant::now();
-    let dir = app_handle.path().download_dir();
-    let dir = match dir {
-        Ok(dir) => Some(dir),
-        Err(_) => None,
-    };
-
-    let files = dir.and_then(|dir| {
-        paths
-            .iter()
-            .map(|path| {
-                let path = dir.join(path);
-                if path.is_file() {
-                    let path = path.to_str().unwrap().to_string();
-                    let fmt = file_format::FileFormat::from_file(&path);
-                    let file = std::fs::read(&path);
-                    if let Ok(file) = file {
-                        let encoded = base64::engine::general_purpose::STANDARD.encode(&file);
-                        let file = LocalFile {
-                            name: path,
-                            lazy: false,
-                            data: Some(encoded),
-                            dimensions: None,
-                            kind: KindWrapper(
-                                fmt.as_ref()
-                                    .map_or(file_format::Kind::Other, |fmt| fmt.kind()),
-                            ),
-                            extension: fmt
-                                .as_ref()
-                                .map_or("".to_string(), |fmt| fmt.extension().to_string()),
-                        };
-
-                        Some(file)
-                    } else {
-                        println!("path: {}, file not ok", path);
-                        None
-                    }
-                } else {
-                    None
-                }
-            })
-            .collect()
-    });
-
-    println!("load_file_batch took {:?}", start.elapsed());
-    if let Some(files) = files {
-        Ok(files)
-    } else {
-        Err("file not found".to_string())
-    }
+struct AppData {
+    port: u16,
 }
 
 #[tauri::command(async)]
@@ -220,13 +22,21 @@ fn scramble_vec<T>(data: &mut Vec<T>) {
     data.shuffle(&mut thread_rng());
 }
 
+fn get_media_dir(app_handle: tauri::AppHandle) -> Option<std::path::PathBuf> {
+    get_data_dir(app_handle).map(|data_dir| data_dir.join("media"))
+}
+
+fn get_editor_dir(app_handle: tauri::AppHandle) -> Option<std::path::PathBuf> {
+    get_data_dir(app_handle).map(|data_dir| data_dir.join("editor"))
+}
+
 fn get_data_dir(app_handle: tauri::AppHandle) -> Option<std::path::PathBuf> {
     let data_dir = app_handle.path().app_data_dir();
     let data_dir = match data_dir {
         Ok(data_dir) => Some(data_dir),
         Err(_) => None,
     };
-    data_dir.map(|data_dir| data_dir.join("media"))
+    data_dir
 }
 
 #[tauri::command(async)]
@@ -237,7 +47,7 @@ fn move_files_to_data_dir(app_handle: tauri::AppHandle, path: &str) -> Result<St
         Ok(home) => Some(home),
         Err(_) => None,
     };
-    let data_dir = get_data_dir(app_handle);
+    let data_dir = get_media_dir(app_handle);
 
     let source_path = home.map(|home| home.join(path));
 
@@ -279,120 +89,26 @@ fn move_files_to_data_dir(app_handle: tauri::AppHandle, path: &str) -> Result<St
 
 #[tauri::command(async)]
 fn clean_data_dir(app_handle: tauri::AppHandle) -> Result<String, String> {
-    let data_dir = get_data_dir(app_handle);
+    let data_dir = get_media_dir(app_handle);
+    let base_dir = data_dir;
 
-    match data_dir {
-        Some(data_path) => {
-            if data_path.is_dir() {
-                let data_dir = std::fs::read_dir(data_path);
-                if let Ok(data_dir) = data_dir {
-                    for entry in data_dir {
-                        if let Ok(entry) = entry {
-                            let path = entry.path();
-                            let is_json = entry.file_name().to_str().unwrap().ends_with(".json");
-
-                            if path.is_file() && !is_json {
-                                std::fs::remove_file(&path);
-                            }
-                        } else {
-                            return Err("Invalid entry".to_string());
-                        }
-                    }
-
-                    Ok("success".to_string())
-                } else {
-                    Err("data dir is a dir but can't be read".to_string())
-                }
-            } else {
-                Err("data dir is not a dir".to_string())
-            }
-        }
+    match base_dir {
+        Some(base_dir) => local_files::clean_dir(&base_dir, |entry| {
+            entry.file_name().to_str().unwrap().ends_with(".json")
+        }),
         _ => Err("data dir not found".to_string()),
     }
 }
 
-fn load_files_base(app_handle: tauri::AppHandle) -> Vec<LocalFile> {
+fn load_files_base(app_handle: tauri::AppHandle) -> Vec<types::LocalFile> {
     let start = std::time::Instant::now();
-    // Tauri read all files in Downloads
 
-    let data_dir = get_data_dir(app_handle);
+    let data_dir = get_media_dir(app_handle);
     println!("data_dir: {:?}", data_dir);
-    //let main_path = dir.map(|dir| dir.join(path));
 
-    let main_path = data_dir;
+    let base_dir = data_dir;
 
-    let paths = main_path
-        .as_ref()
-        .and_then(|path| {
-            if path.is_file() {
-                let path_string = path.to_str().unwrap();
-                Some(vec![path_string.to_string()])
-            } else if path.is_dir() {
-                let dir = std::fs::read_dir(path);
-                let mut files = vec![];
-                if let Ok(dir) = dir {
-                    for entry in dir {
-                        if let Ok(entry) = entry {
-                            let path = entry.path().to_str().unwrap().to_string();
-                            files.push(path);
-                        }
-                    }
-                }
-
-                Some(files)
-            } else {
-                std::fs::create_dir(path);
-                None
-            }
-        })
-        .unwrap_or(vec![]);
-
-    let mut files = vec![];
-    for path in paths {
-        let is_json = path.ends_with(".json");
-
-        if is_json {
-            continue;
-        }
-
-        let store = main_path.as_ref().and_then(|path| {
-            match jfs::Store::new_with_cfg(
-                path.join("metadata"),
-                jfs::Config {
-                    single: true,
-                    indent: 2,
-                    pretty: false,
-                },
-            ) {
-                Ok(store) => Some(store),
-                Err(_) => None,
-            }
-        });
-        let fmt = file_format::FileFormat::from_file(&path);
-        let dims = get_dimensions_from_path(&path, store);
-
-        //let file = tauri::api::file::read_binary(&path);
-
-        //if let Ok(file) = file {
-        //let encoded = base64::engine::general_purpose::STANDARD.encode(&file);
-        let file = LocalFile {
-            name: path,
-            lazy: true,
-            data: None,
-            dimensions: dims,
-            kind: KindWrapper(
-                fmt.as_ref()
-                    .map_or(file_format::Kind::Other, |fmt| fmt.kind()),
-            ),
-            extension: fmt
-                .as_ref()
-                .map_or("".to_string(), |fmt| fmt.extension().to_string()),
-        };
-        files.push(file);
-        //} else {
-        //    println!("path: {}, file not ok", path);
-        //}
-    }
+    let files = local_files::load_local_files_from_base_dir(base_dir);
 
     println!("loaded {} files in {:?}", files.len(), start.elapsed());
 
@@ -400,25 +116,76 @@ fn load_files_base(app_handle: tauri::AppHandle) -> Vec<LocalFile> {
 }
 
 #[tauri::command(async)]
-fn load_files(app_handle: tauri::AppHandle) -> Vec<LocalFile> {
+fn load_files(app_handle: tauri::AppHandle) -> Vec<types::LocalFile> {
     load_files_base(app_handle)
 }
 
 #[tauri::command(async)]
-fn load_files_random(app_handle: tauri::AppHandle) -> Vec<LocalFile> {
+fn load_files_random(app_handle: tauri::AppHandle) -> Vec<types::LocalFile> {
     let mut result = load_files_base(app_handle);
     scramble_vec(&mut result);
     result
 }
 
+#[tauri::command(async)]
+fn move_file_to_data_dir(app_handle: tauri::AppHandle, dir: &str) -> Result<String, String> {
+    let base_dir = get_editor_dir(app_handle);
+
+    match base_dir {
+        Some(base_dir) => local_files::hard_link_file_to_base_dir(dir, &base_dir),
+        None => Err("data dir not found".to_string()),
+    }
+}
+
+#[tauri::command(async)]
+fn snip_file(
+    app_handle: tauri::AppHandle,
+    source_path_string: &str,
+    from: &str,
+    to: &str,
+    clip_name: &str,
+    extension: &str,
+    should_save_to_gallery: Option<bool>,
+) -> Result<String, String> {
+    let base_dir = if should_save_to_gallery.unwrap_or(false) {
+        get_media_dir(app_handle)
+    } else {
+        get_editor_dir(app_handle)
+    };
+    if let Some(base_dir) = base_dir {
+        local_files::snip_file_to_base_dir(
+            source_path_string,
+            &base_dir,
+            from,
+            to,
+            clip_name,
+            extension,
+        )
+    } else {
+        Err("data dir not found".to_string())
+    }
+}
+
+#[tauri::command]
+fn get_http_port(app_handle: tauri::AppHandle) -> u16 {
+    let state = app_handle.state::<AppData>();
+
+    state.port
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    //let port =
     tauri::Builder::default()
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
+            let port = http_server::get_available_port().unwrap_or(8080);
+
+            app.manage(AppData { port });
+
             let data_dir = app.path().app_data_dir();
 
             let data_dir = match data_dir {
@@ -430,20 +197,46 @@ pub fn run() {
                 std::fs::create_dir_all(&data_dir);
 
                 let media_dir = data_dir.join("media");
+                let editor_dir = data_dir.join("editor");
 
                 std::fs::create_dir_all(media_dir);
+                std::fs::create_dir_all(editor_dir);
             }
 
+            //tauri::async_runtime::spawn(
+            //    actix_web::HttpServer::new(|| {
+            //        actix_web::App::new()
+            //            .wrap(actix_cors::Cors::permissive())
+            //            .service(http_server::test_handle)
+            //            .service(http_server::file_handle)
+            //    })
+            //    .bind(("127.0.0.1", port.clone()))?
+            //    .run(),
+            //);
+
             Ok(())
+        })
+        .register_asynchronous_uri_scheme_protocol("stream", move |_ctx, request, responder| {
+            match streaming::get_stream_response(request) {
+                Ok(http_response) => responder.respond(http_response),
+                Err(e) => responder.respond(
+                    ResponseBuilder::new()
+                        .status(StatusCode::INTERNAL_SERVER_ERROR)
+                        .header(CONTENT_TYPE, "text/plain")
+                        .body(e.to_string().as_bytes().to_vec())
+                        .unwrap(),
+                ),
+            }
         })
         .invoke_handler(tauri::generate_handler![
             load_files,
             load_files_random,
-            load_file,
-            load_file_batch,
             move_files_to_data_dir,
             clean_data_dir,
-            get_scrolller_data
+            get_scrolller_data,
+            move_file_to_data_dir,
+            get_http_port,
+            snip_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

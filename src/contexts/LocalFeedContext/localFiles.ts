@@ -19,8 +19,23 @@ const getFileExtension = (file: LocalFile) => {
   return file.extension;
 };
 
+export const convertFilePathToFileSrc = (
+  filePath: string,
+  protocol?: "stream",
+) => {
+  const res = convertFileSrc(filePath, protocol);
+  return res;
+};
+
+export const convertFilePathToHttpSrc = (
+  filePath: string,
+  httpPort: number,
+) => {
+  return `http://localhost:${httpPort}/file?path=${filePath}`;
+};
+
 export const localFileToFinalFile = (file: LocalFile): FinalFile<LocalFile> => {
-  const localFileURL = convertFileSrc(file.name);
+  const localFileURL = convertFilePathToFileSrc(file.name);
   // const dataFileURL = `data:${getFileKind(file)}/${getFileExtension(file)};base64,${file.data}`;
   return {
     ...file,
@@ -30,6 +45,26 @@ export const localFileToFinalFile = (file: LocalFile): FinalFile<LocalFile> => {
     additional: file,
   };
 };
+
+export const snipLocalFile = (
+  path: string,
+  outputName: string,
+  from: string,
+  to: string,
+  shouldSaveToGallery?: boolean,
+) => {
+  return invoke("snip_file", {
+    sourcePathString: path,
+    clipName: outputName,
+    from: from,
+    to: to,
+    extension: "webm",
+    shouldSaveToGallery,
+  });
+};
+
+export const moveFileToAssets = (filePath: string) =>
+  invoke("move_file_to_data_dir", { dir: filePath });
 
 export const loadLocalFiles = ({
   randomize,

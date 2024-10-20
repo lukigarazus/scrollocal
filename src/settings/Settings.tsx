@@ -10,18 +10,15 @@ export function Settings({}: {}) {
   const [open, setOpen] = useState(false);
   return (
     <div
-      style={{
-        position: "absolute",
-        bottom: 25,
-        right: 25,
-        color: "red",
-        cursor: "pointer",
-      }}
+      className="absolute bottom-6 right-6 cursor-pointer rounded-md"
       title="Settings"
     >
-      <button onClick={() => setOpen(true)}>
+      <button
+        className="bg-accent text-accentInverse"
+        onClick={() => setOpen(true)}
+      >
         Settings
-        <CogIcon color="red" />
+        <CogIcon />
       </button>
       <Modal
         isOpen={open}

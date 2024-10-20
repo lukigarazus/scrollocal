@@ -38,6 +38,7 @@ interface LocalFeedContext extends LocalFeedContextSettings {
   setGlob: (glob: string | null) => void;
   setRandomize: (randomize: boolean) => void;
   loadGlobFiles: () => Promise<void>;
+  triggerReload: () => Promise<void>;
 }
 
 export const LOCAL_FEED_NAME = "Local files feed";
@@ -48,6 +49,7 @@ const LocalFeedContext = createContext<LocalFeedContext>({
   randomize: false,
   setRandomize: () => {},
   loadGlobFiles: async () => {},
+  triggerReload: async () => {},
 });
 
 type FilesState =
@@ -143,6 +145,15 @@ export const LocalFeedProvider = ({
       .then(() => {});
   }, [randomize]);
 
+  const triggerReload = useCallback(() => {
+    return loadLocalFiles({ randomize }).then((files) => {
+      setBareFiles({
+        kind: "loaded",
+        files,
+      });
+    });
+  }, [loadGlobFiles]);
+
   // useEffect(() => {
   //   if (files.kind !== "loaded") return;
   //   registerFeed({
@@ -155,12 +166,7 @@ export const LocalFeedProvider = ({
   //   });
   // }, [getNextFile, files]);
   useEffect(() => {
-    loadLocalFiles({ randomize }).then((files) => {
-      setBareFiles({
-        kind: "loaded",
-        files,
-      });
-    });
+    triggerReload();
   }, []);
   useEffect(() => {
     registerFeed({ name: LOCAL_FEED_NAME, factory: feedFactory });
@@ -181,6 +187,7 @@ export const LocalFeedProvider = ({
         setGlob,
         setRandomize,
         loadGlobFiles,
+        triggerReload,
       }}
     >
       {children}

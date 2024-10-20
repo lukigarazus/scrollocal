@@ -9,6 +9,7 @@ import { useFullscreen } from "../contexts/FullscreenContext";
 import { ScrollElement } from "../scroll/utils";
 import { FeedResult, FeedState } from "../feed/Feed";
 import { FinalFileCell } from "./FinalFileCell";
+import { Box } from "../components/Box";
 
 export function Gallery({}: {}) {
   const { feed } = useFeed();
@@ -152,18 +153,7 @@ export function Gallery({}: {}) {
     };
   }, [feed]);
   return (
-    <div
-      style={{
-        width: "100vw",
-        height: "100vh",
-        boxSizing: "border-box",
-        border: "1px solid grey",
-        overflow: "hidden",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
+    <Box>
       {feedState === "ok" || feedState === "exhausted" ? (
         <Scroll
           exhausted={feed.state === "exhausted"}
@@ -183,6 +173,6 @@ export function Gallery({}: {}) {
       ) : (
         <div>No active feeds, go to settings</div>
       )}
-    </div>
+    </Box>
   );
 }

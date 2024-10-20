@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "start": "tauri dev"
+    "start": "tauri dev",
+    "build:tailwind": "npx tailwindcss -i ./src/App.css -o ./src/tailwind.css --watch"
   },
   "dependencies": {
     "@heroicons/react": "^2.1.5",
@@ -21,6 +22,7 @@
     "invert-color": "^2.0.0",
     "lodash": "^4.17.21",
     "masonic": "^4.0.1",
+    "pixelmatch": "^6.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hotkeys-hook": "^4.5.1",
@@ -32,10 +34,12 @@
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.2",
     "@types/lodash": "^4.17.10",
+    "@types/pixelmatch": "^5.2.6",
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
     "@types/react-window": "^1.8.8",
     "@vitejs/plugin-react": "^4.2.1",
+    "tailwindcss": "^3.4.14",
     "typescript": "^5.2.2",
     "vite": "^5.3.1"
   }

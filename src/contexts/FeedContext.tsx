@@ -21,6 +21,7 @@ type FeedContext = {
   feedNames: string[];
   switchFeedEnablement: (id: string) => void;
   isFeedEnabled: (id: string) => boolean;
+  triggerReload: () => Promise<void>;
 };
 const FeedContext = createContext<FeedContext>({
   feed: new ComposedFeedImpl<FinalFile, Filter>("", {} as Filter, 1),
@@ -29,6 +30,7 @@ const FeedContext = createContext<FeedContext>({
   feedNames: [],
   switchFeedEnablement: () => {},
   isFeedEnabled: () => false,
+  triggerReload: async () => {},
 });
 
 const persistEnabledFeedNames = (enabledFeeds: string[]) => {
@@ -44,6 +46,7 @@ const loadEnabledFeedNames = (): string[] => {
 };
 
 export const FeedProvider = ({ children }: PropsWithChildren<{}>) => {
+  const [random, setRandom] = useState(Math.random());
   const filter = useFilter();
   const [registeredFeeds, setRegisteredFeeds] = useState<
     { name: string; factory: FeedFactory<FinalFile, Filter> }[]
@@ -67,7 +70,7 @@ export const FeedProvider = ({ children }: PropsWithChildren<{}>) => {
       feed.registerFeed(feedFactory);
     }
     return feed;
-  }, [enabledFeeds, filter.asString]);
+  }, [enabledFeeds, filter.asString, random]);
 
   const feedNames = useMemo(() => {
     return registeredFeeds.map((feed) => feed.name);
@@ -119,6 +122,9 @@ export const FeedProvider = ({ children }: PropsWithChildren<{}>) => {
         feedNames,
         switchFeedEnablement,
         isFeedEnabled,
+        triggerReload: async () => {
+          setRandom(Math.random());
+        },
       }}
     >
       {children}

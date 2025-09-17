@@ -20,6 +20,7 @@ export function Gallery({}: {}) {
   const { requestFullscreen, requestGalleryFullscreen } = useFullscreen();
 
   const getNextElement = useCallback((): Promise<ScrollElement | null> => {
+    console.log("getnextelement");
     switch (feed.state) {
       case "ok": {
         return feed.getNext().then((result: FeedResult<FinalFile<unknown>>) => {
@@ -28,13 +29,14 @@ export function Gallery({}: {}) {
               const file = result.value;
               const res = {
                 data: file,
-                height: file.dimensions?.height ?? 0,
-                width: file.dimensions?.width ?? 0,
+                height: file.src[0].dimensions?.height ?? 0,
+                width: file.src[0].dimensions?.width ?? 0,
                 id: file.name,
-                dataSrc: file.src,
+                dataSrc: file.src[0].url,
               } satisfies ScrollElement;
               setGalleryElements((prev) => [...prev, res]);
               galleryElementsRef.current = [...galleryElementsRef.current, res];
+              console.log(res);
               return res;
             }
             case "error": {
@@ -133,6 +135,17 @@ export function Gallery({}: {}) {
               width={width}
               onCellClick={onCellClick}
               style={{ border: "2px red solid" }}
+            />
+          );
+        case "remote":
+          return (
+            <FinalFileCell
+              {...props}
+              data={data}
+              index={index}
+              height={height}
+              width={width}
+              onCellClick={onCellClick}
             />
           );
         default:

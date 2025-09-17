@@ -1,6 +1,7 @@
-import { ComponentType, useState } from "react";
+import { ComponentType, useState, useEffect } from "react";
 import { HeaderWithContent } from "./HeaderWithContent";
 import { Box } from "./Box";
+import { useSettings } from "../contexts/SettingsContext";
 
 type Tab<T> = { label: string; id: T };
 export function Tabs<Tabs extends string>({
@@ -14,8 +15,24 @@ export function Tabs<Tabs extends string>({
   headerClassName?: string;
   bodyClassName?: string;
 }) {
-  const [selectedTab, setSelectedTab] = useState(tabs[0].id);
-  const Component = components[selectedTab] as ComponentType;
+  const { currentTab, setCurrentTab } = useSettings();
+  const [selectedTab, setSelectedTab] = useState<Tabs | undefined>(undefined);
+  const Component = selectedTab
+    ? (components[selectedTab] as ComponentType)
+    : () => null;
+
+  useEffect(() => {
+    if (currentTab) {
+      setSelectedTab(currentTab as Tabs);
+    } else {
+      setCurrentTab(tabs[0].id);
+    }
+  }, [currentTab]);
+  useEffect(() => {
+    if (selectedTab) {
+      setCurrentTab(selectedTab);
+    }
+  }, [selectedTab]);
   return (
     <HeaderWithContent>
       <div

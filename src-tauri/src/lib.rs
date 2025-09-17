@@ -166,6 +166,11 @@ fn snip_file(
     }
 }
 
+#[tauri::command(async)]
+fn try_fixing_file(source_path_string: &str) -> Result<String, String> {
+    local_files::try_fixing_file(source_path_string)
+}
+
 #[tauri::command]
 fn get_http_port(app_handle: tauri::AppHandle) -> u16 {
     let state = app_handle.state::<AppData>();
@@ -236,7 +241,8 @@ pub fn run() {
             get_scrolller_data,
             move_file_to_data_dir,
             get_http_port,
-            snip_file
+            snip_file,
+            try_fixing_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

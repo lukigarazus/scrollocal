@@ -70,7 +70,7 @@ function Ok({
   );
 
   const dimensions = useMemo(
-    () => calculateDimensions(data.dimensions, width),
+    () => calculateDimensions(data.src[0].dimensions, width),
     [data, width],
   );
 
@@ -86,7 +86,7 @@ function Ok({
     if (externalVideoElement) {
       const element = externalVideoElement;
 
-      element.src = fixURL(data.src);
+      element.src = fixURL(data.src[0].url);
       element.muted = muted;
       element.controls = showControlsInGalleryView;
       element.autoplay = autoplay;
@@ -238,7 +238,7 @@ function Error({
         }}
       >
         <div>
-          {error.message} {data.src}
+          {error.message} {data.src[0].url}
         </div>
         {error instanceof MediaError && <div>Retrying...</div>}
       </div>

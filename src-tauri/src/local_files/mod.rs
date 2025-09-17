@@ -1,5 +1,52 @@
 use crate::types::{Dimensions, KindWrapper, LocalFile};
 
+pub fn try_fixing_file(source_path_string: &str) -> Result<String, String> {
+    let source_path = std::path::Path::new(source_path_string);
+
+    if source_path.is_file() {
+        //ffmpeg -i pelicula.mp4 -vcodec h264 pelicula_264.mp4
+
+        let file_stem = source_path.file_stem().unwrap();
+        let new_file_name = format!(
+            "{}_fixed.{}",
+            file_stem.to_string_lossy(),
+            source_path
+                .extension()
+                .unwrap_or_default()
+                .to_string_lossy()
+        );
+        let dest_path = source_path.with_file_name(new_file_name);
+        let status = std::process::Command::new("ffmpeg")
+            .arg("-i")
+            .arg(&source_path)
+            .arg("-c:v")
+            .arg("libx264")
+            .arg("-c:a")
+            .arg("aac")
+            .arg("-b:a")
+            .arg("192k")
+            .arg("-movflags")
+            .arg("+faststart")
+            .arg("-strict")
+            .arg("experimental")
+            .arg(&dest_path)
+            .status();
+
+        match status {
+            Ok(status) => {
+                if status.success() {
+                    Ok(dest_path.to_string_lossy().to_string())
+                } else {
+                    Err("Failed to execute FFmpeg".to_string())
+                }
+            }
+            Err(err) => Err(err.to_string()),
+        }
+    } else {
+        Err("File not found".to_string())
+    }
+}
+
 pub fn snip_file_to_base_dir(
     source_path_string: &str,
     base_dir: &std::path::PathBuf,

@@ -31,7 +31,7 @@ export const convertFilePathToHttpSrc = (
   filePath: string,
   httpPort: number,
 ) => {
-  return `http://localhost:${httpPort}/file?path=${filePath}`;
+  return `http://192.68.1.32:${httpPort}/file?path=${filePath}`;
 };
 
 export const localFileToFinalFile = (file: LocalFile): FinalFile<LocalFile> => {
@@ -39,7 +39,7 @@ export const localFileToFinalFile = (file: LocalFile): FinalFile<LocalFile> => {
   // const dataFileURL = `data:${getFileKind(file)}/${getFileExtension(file)};base64,${file.data}`;
   return {
     ...file,
-    src: localFileURL,
+    src: [{ url: localFileURL, dimensions: file.dimensions }],
     kind: getFileKind(file),
     extension: getFileExtension(file),
     additional: file,

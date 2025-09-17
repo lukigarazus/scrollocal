@@ -233,7 +233,7 @@ function Column({
   }, [elementsWithDimensions, scrollTop]);
 
   useEffect(() => {
-    if (bottomOffset < 300 && !exhausted) {
+    if (bottomOffset < 100 && !exhausted) {
       signalMore();
       // if (exhausted) return;
       // getNextElements(getNextElement, 1).then((elements) => {
@@ -366,6 +366,10 @@ export default function Scroll({
     overscanBy,
     columnDividedElements,
   ]);
+
+  useEffect(() => {
+    setScrollPosition(1);
+  }, []);
 
   return (
     <div

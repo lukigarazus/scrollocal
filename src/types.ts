@@ -17,11 +17,10 @@ export type File = LocalFile;
 
 export interface FinalFile<Additional = unknown> {
   name: string;
-  src: string;
+  src: { url: string; dimensions?: Dimensions }[];
   kind: "video" | "image";
-  type: "local" | "scrolller";
+  type: "local" | "scrolller" | "remote";
   extension: string;
-  dimensions?: Dimensions;
   additional?: Additional;
 }
 

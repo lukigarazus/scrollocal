@@ -11,7 +11,9 @@ import {
 import { useFeed } from "../contexts/FeedContext";
 import { Section, Sections } from "../components/Section";
 import { LocalFileControl } from "./LocalFileControl";
+import { RemoteFeedControl } from "./RemoteFeedControl";
 import { useFilter } from "../contexts/FilterContext";
+import { REMOTE_FEED_NAME } from "../contexts/RemoteFeedContext/RemoteFeedContext";
 
 function BooleanControl({ name, value, setValue }: any) {
   return (
@@ -119,6 +121,11 @@ export function FeedControl() {
               setValue={setRandomize}
             />
             <LocalFileControl />
+          </Section>
+        )}
+        {isFeedEnabled(REMOTE_FEED_NAME) && (
+          <Section name="Remote feed settings" as={h2}>
+            <RemoteFeedControl />
           </Section>
         )}
         <Section name="Player settings" as={h2}>

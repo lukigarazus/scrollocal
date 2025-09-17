@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { FilePicker } from "../components/FilePicker";
 import {
   convertFilePathToFileSrc,
@@ -8,7 +9,6 @@ import { Box } from "../components/Box";
 import { SnipsContainer } from "./Snips";
 import { VideoFullSize } from "../components/VideoFullsize";
 import { Card } from "../components/Card";
-import { useBoundingClientRect } from "../useBoundingClientRef";
 import { VideoOverview } from "./VideoOverview";
 
 type Settings = {
@@ -16,6 +16,7 @@ type Settings = {
 };
 type CommonState = {
   currentVideoSrc?: string;
+  currentVideoPath?: string;
   currentVideoOriginalPath?: string;
   settings: Settings;
 };
@@ -23,8 +24,13 @@ type CommonState = {
 type LoadingVideoState = { kind: "loading-video" } & CommonState;
 type IdleState = { kind: "idle" } & CommonState;
 type VideoLoadedState = { kind: "video-loaded" } & CommonState;
+type FixingVideoState = { kind: "fixing-video" } & CommonState;
 
-type State = LoadingVideoState | IdleState | VideoLoadedState;
+type State =
+  | LoadingVideoState
+  | IdleState
+  | VideoLoadedState
+  | FixingVideoState;
 type StateFragment = { state: State; setState: (state: State) => void };
 
 export const VideoEditor = () => {
@@ -36,10 +42,10 @@ export const VideoEditor = () => {
   return (
     <div className="size-full grid gap-2 p-2 grid-cols-[2fr_5fr_1fr]">
       <Card>
-        {state.currentVideoOriginalPath ? (
+        {state.currentVideoPath ? (
           <SnipsContainer
             videoElement={videoElement.current}
-            videoPath={state.currentVideoOriginalPath}
+            videoPath={state.currentVideoPath}
             shouldSavetoGallery={state.settings.shouldSavetoGallery}
           />
         ) : (
@@ -108,7 +114,7 @@ const SettingsContainer = ({
     });
   }
   return (
-    <div>
+    <div className="flex flex-col gap-2 justify-center items-center">
       <div>
         <label htmlFor="shouldSavetoGallery">Save to gallery</label>
         <input
@@ -156,11 +162,33 @@ const SettingsContainer = ({
               ...state,
               kind: "video-loaded",
               currentVideoSrc: streamPath,
-              currentVideoOriginalPath: newPath as string,
+              currentVideoPath: newPath as string,
+              currentVideoOriginalPath: files[0],
             });
           });
         }}
       />
+      {state.currentVideoOriginalPath && (
+        <div>
+          <button
+            onClick={() => {
+              setState({ ...state, kind: "fixing-video" });
+              invoke("try_fixing_file", {
+                sourcePathString: state.currentVideoOriginalPath,
+              }).then(() => {
+                setState({
+                  ...state,
+                  kind: "video-loaded",
+                });
+              });
+            }}
+          >
+            {state.kind === "fixing-video"
+              ? "Trying to fix the video..."
+              : "Try to fix the video"}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

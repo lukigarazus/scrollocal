@@ -15,6 +15,8 @@ export type Settings = {
   bufferSize: number;
   maxVideoElements: number;
   allowTags: boolean;
+  persistTab: boolean;
+  currentTab?: string;
 };
 
 type SettingsContext = Settings & {
@@ -23,6 +25,8 @@ type SettingsContext = Settings & {
   setBufferSize: (bufferSize: number) => void;
   setMaxVideoElements: (maxVideoElements: number) => void;
   setAllowTags: (allowTags: boolean) => void;
+  setPersistTab: (persistTab: boolean) => void;
+  setCurrentTab: (currentTab: string) => void;
 };
 
 export const persistSettings = (settings: Settings) => {
@@ -36,6 +40,8 @@ const defaultSettings: Settings = {
   showControlsInGalleryView: false,
   bufferSize: 2,
   maxVideoElements: 20,
+  persistTab: true,
+  currentTab: undefined,
 };
 
 export const loadSettings = (): Settings => {
@@ -53,6 +59,8 @@ export const SettingsContext = createContext<SettingsContext>({
   setBufferSize: (bufferSize: number) => {},
   setMaxVideoElements: (maxVideoElements: number) => {},
   setAllowTags: (allowTags: boolean) => {},
+  setPersistTab: (persistTab: boolean) => {},
+  setCurrentTab: (currentTab: string) => {},
 });
 
 export const SettingsProvider = ({ children }: PropsWithChildren) => {
@@ -75,6 +83,14 @@ export const SettingsProvider = ({ children }: PropsWithChildren) => {
       setShowControlsInGalleryView: setValue("showControlsInGalleryView"),
       setBufferSize: setValue("bufferSize"),
       setMaxVideoElements: setValue("maxVideoElements"),
+      setPersistTab: (value: boolean) => {
+        setSettings({
+          ...settings,
+          currentTab: value ? settings.currentTab : undefined,
+          persistTab: value,
+        });
+      },
+      setCurrentTab: setValue("currentTab"),
     } satisfies SettingsContext;
   }, [settings]);
 

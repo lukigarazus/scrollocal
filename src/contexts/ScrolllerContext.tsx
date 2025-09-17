@@ -35,12 +35,16 @@ const scrolllerItemToFinalFile = (
     kind: "video",
     type: "scrolller",
     extension: getFileExtension(firstMediaSource.url),
-    dimensions: {
-      height: firstMediaSource.height,
-      width: firstMediaSource.width,
-      aspect_ratio: "1:1",
-    },
-    src: firstMediaSource.url,
+    src: [
+      {
+        url: firstMediaSource.url,
+        dimensions: {
+          height: firstMediaSource.height,
+          width: firstMediaSource.width,
+          aspect_ratio: "1:1",
+        },
+      },
+    ],
   };
 };
 

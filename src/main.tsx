@@ -11,6 +11,7 @@ import { FeedProvider } from "./contexts/FeedContext";
 import { FilterProvider } from "./contexts/FilterContext";
 import { ScrolllerProvider } from "./contexts/ScrolllerContext";
 import { HttpContextProvider } from "./contexts/HttpContext";
+import { RemoteFeedProvider } from "./contexts/RemoteFeedContext/RemoteFeedContext";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <HttpContextProvider>
@@ -18,19 +19,21 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
       <TagProvider>
         <FilterProvider>
           <FeedProvider>
-            <LocalFeedProvider>
-              <ScrolllerProvider>
-                <VideoElementProvider>
-                  <FullscreenProvider>
-                    <HotkeysProvider>
-                      <React.StrictMode>
-                        <App />
-                      </React.StrictMode>
-                    </HotkeysProvider>
-                  </FullscreenProvider>
-                </VideoElementProvider>
-              </ScrolllerProvider>
-            </LocalFeedProvider>
+            <RemoteFeedProvider>
+              <LocalFeedProvider>
+                <ScrolllerProvider>
+                  <VideoElementProvider>
+                    <FullscreenProvider>
+                      <HotkeysProvider>
+                        <React.StrictMode>
+                          <App />
+                        </React.StrictMode>
+                      </HotkeysProvider>
+                    </FullscreenProvider>
+                  </VideoElementProvider>
+                </ScrolllerProvider>
+              </LocalFeedProvider>
+            </RemoteFeedProvider>
           </FeedProvider>
         </FilterProvider>
       </TagProvider>

@@ -5,18 +5,48 @@ import { FinalFile } from "../../types";
 import { LocalFile } from "./types";
 
 const getFileKind = (file: LocalFile): "video" | "image" => {
-  if (file.kind === "unknown") {
-    // this is a kink of the Rust library I use for extension detection, whis is webm
-    return file.extension === "ebml" ? "video" : "image";
+  // First check if the file kind is explicitly set to image
+  if (file.kind === "image") {
+    return "image";
   }
-  return file.kind === "image" ? "image" : "video";
+
+  // If kind is video, return video
+  if (file.kind === "video") {
+    return "video";
+  }
+
+  // For unknown types, use extension-based detection with MP4 support
+  if (file.kind === "unknown") {
+    const videoExtensions = ["mp4", "m4v", "mov", "avi", "mkv", "webm", "flv", "ebml"];
+    const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"];
+
+    const ext = file.extension.toLowerCase();
+
+    if (videoExtensions.includes(ext)) {
+      return "video";
+    }
+    if (imageExtensions.includes(ext)) {
+      return "image";
+    }
+
+    // Default fallback - if we can't determine, assume it's an image
+    return "image";
+  }
+
+  // Default to video for any other cases (audio files will be treated as video for now)
+  return "video";
 };
 
 const getFileExtension = (file: LocalFile) => {
-  if (file.extension === "ebml") {
-    return "webm";
+  // Handle special cases where the detected extension needs normalization
+  switch (file.extension.toLowerCase()) {
+    case "ebml":
+      return "webm";
+    case "m4v":
+      return "mp4"; // Normalize m4v to mp4 for consistency
+    default:
+      return file.extension;
   }
-  return file.extension;
 };
 
 export const convertFilePathToFileSrc = (

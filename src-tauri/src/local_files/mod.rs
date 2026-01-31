@@ -269,22 +269,48 @@ pub fn load_local_files_from_base_dir(base_dir: Option<std::path::PathBuf>) -> V
             let fmt = file_format::FileFormat::from_file(&path);
             let dims = get_media_dimensions_from_path(&path, &base_dir);
 
-            //let file = tauri::api::file::read_binary(&path);
+            // Extract file extension for fallback detection
+            let file_extension = std::path::Path::new(&path)
+                .extension()
+                .and_then(|ext| ext.to_str())
+                .unwrap_or("")
+                .to_lowercase();
 
-            //if let Ok(file) = file {
-            //let encoded = base64::engine::general_purpose::STANDARD.encode(&file);
+            // Determine file kind with MP4 fallback logic
+            let file_kind = match fmt {
+                Ok(format) => format.kind(),
+                Err(_) => {
+                    // Fallback for when file-format crate fails
+                    match file_extension.as_str() {
+                        "mp4" | "m4v" | "mov" | "avi" | "mkv" | "webm" | "flv" => file_format::Kind::Video,
+                        "jpg" | "jpeg" | "png" | "gif" | "bmp" | "webp" | "svg" => file_format::Kind::Image,
+                        "mp3" | "wav" | "flac" | "aac" | "ogg" => file_format::Kind::Audio,
+                        _ => file_format::Kind::Other,
+                    }
+                }
+            };
+
+            // Determine extension with MP4 handling
+            let extension = match fmt {
+                Ok(format) => {
+                    let detected_ext = format.extension().to_string();
+                    // Handle special cases where file-format might return incorrect extensions
+                    if detected_ext.is_empty() || detected_ext == "bin" {
+                        file_extension
+                    } else {
+                        detected_ext
+                    }
+                },
+                Err(_) => file_extension,
+            };
+
             let file = LocalFile {
                 name: path,
                 lazy: true,
                 data: None,
                 dimensions: dims,
-                kind: KindWrapper(
-                    fmt.as_ref()
-                        .map_or(file_format::Kind::Other, |fmt| fmt.kind()),
-                ),
-                extension: fmt
-                    .as_ref()
-                    .map_or("".to_string(), |fmt| fmt.extension().to_string()),
+                kind: KindWrapper(file_kind),
+                extension,
             };
             files.push(file);
             //} else {
